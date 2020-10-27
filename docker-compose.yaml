@@ -5,6 +5,7 @@ services:
     build: ./crawler
     volumes:
       - ./crawler:/app
+      - $HOME/.aws:/root/.aws
     tty: true
     stdin_open: true
 
