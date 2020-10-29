@@ -1,3 +1,5 @@
-scrapy
-scrapy-s3pipeline
-
+pyqs
+pymongo
+requests
+lxml
+cssselect
