@@ -1,39 +1,28 @@
-import time
-import re
 from typing import Iterator
 import logging
 
 import requests
 import lxml.html
-from pymongo import MongoClient
-from scraper_tasks import scrape
+from downloader_tasks import download
 
 
 def main():
-    client = MongoClient('mongodb://root:password@mongo:27017')
-    collection = client.scraping.suumo_htmls
-    collection.create_index('key', unique=True)
+    logging.info('Crawling urls')
 
     session = requests.Session()
     # 東京都渋谷区 家賃10万以下
-    url = 'https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=030&bs=040&pc=30&smk=&po1=25&po2=99&shkr1=03&shkr2=03&shkr3=03&shkr4=03&sc=13113&ta=13&cb=0.0&ct=10.0&et=9999999&mb=0&mt=9999999&cn=9999999&fw2='
-    response = session.get(url)
-    urls = scrape_list_page(response)
-    for url in urls:
-        key = extract_key(url)
+    start_url = 'https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=030&bs=040&pc=30&smk=&po1=25&po2=99&shkr1=03&shkr2=03&shkr3=03&shkr4=03&sc=13113&ta=13&cb=0.0&ct=10.0&et=9999999&mb=0&mt=9999999&cn=9999999&fw2='
 
-        suumo_html = collection.find_one({'key': key})
-        if not suumo_html:
-            time.sleep(1)
-            logging.info(f'Ferching {url}')
-            response = session.get(url)
-
-            collection.insert_one({
-                'url': url,
-                'key': key,
-                'html': response.content,
-            })
-            scrape.delay(key)
+    response = session.get(start_url)
+    last_page = get_last_page(response)
+    for page in range(1, last_page + 1):
+        url = f'{start_url}&page={page}'
+        logging.info(f'Fetching list page: {url}')
+        response = session.get(url)
+        urls = scrape_list_page(response)
+        logging.info(urls)
+        for url in urls:
+            download.delay(url)
 
 
 def scrape_list_page(response: requests.Response) -> Iterator[str]:
@@ -45,9 +34,11 @@ def scrape_list_page(response: requests.Response) -> Iterator[str]:
         yield url
 
 
-def extract_key(url: str) -> str:
-    m = re.search(r'/chintai/(.+)/', url)
-    return m.group(1)
+def get_last_page(response: requests.Response) -> int:
+    html = lxml.html.fromstring(response.text)
+    last_page_str = html.cssselect('ol.pagination-parts > li:last-child > a')[0].text_content()
+    logging.info(f'last page: {last_page_str}')
+    return int(last_page_str)
 
 
 if __name__ == '__main__':

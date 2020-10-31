@@ -3,3 +3,4 @@ pymongo
 requests
 lxml
 cssselect
+boto3

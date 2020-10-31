@@ -5,7 +5,7 @@ import lxml.html
 from pymongo import MongoClient
 
 
-@task(queue='suumo')
+@task(queue='scrape')
 def scrape(key: str):
     client = MongoClient('mongodb://root:password@mongo:27017')
     html_collection = client.scraping.suumo_htmls
