@@ -2,7 +2,6 @@ import re
 
 import logging
 from pyqs import task
-from pymongo import MongoClient
 import requests
 from scraper_tasks import scrape
 import boto3
@@ -10,23 +9,28 @@ import boto3
 
 @task(queue='download')
 def download(url: str):
-    client = MongoClient('mongodb://root:password@mongo:27017')
-    html_collection = client.scraping.suumo_htmls
-    html_collection.create_index('key', unique=True)
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('suumo_htmls')
 
     key = extract_key(url)
-    suumo_html = html_collection.find_one({'key': key})
-    if not suumo_html:
-        logging.info(f'Ferching detail page: {url}')
+    try:
+        suumo_html = table.get_item(Key={'key': key})
+        suumo_html['Item']
+
+    except KeyError as e:
+        logging.info(f'Fetching detail page: {url}')
         response = requests.get(url)
 
-        html_collection.insert_one({
-            'url': url,
-            'key': key,
-            'html': response.content,
-        })
-
+        table.put_item(
+            Item={
+                'url': url,
+                'key': key,
+                'html': response.content,
+            }
+        )
         scrape.delay(key)
+    else:
+        logging.info(f'already fetched page: {url}')
 
 
 def extract_key(url: str) -> str:

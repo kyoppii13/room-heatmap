@@ -1,21 +1,23 @@
-import re
-
 from pyqs import task
 import lxml.html
-from pymongo import MongoClient
+import boto3
 
 
 @task(queue='scrape')
 def scrape(key: str):
-    client = MongoClient('mongodb://root:password@mongo:27017')
-    html_collection = client.scraping.suumo_htmls
+    dynamodb = boto3.resource('dynamodb')
+    suumo_htmls_table = dynamodb.Table('suumo_htmls')
+    rents_table = dynamodb.Table('rents')
 
-    suumo_html = html_collection.find_one({'key': key})
-    suumo = scrape_detail_page(key, suumo_html['url'], suumo_html['html'])
+    suumo_html = suumo_htmls_table.get_item(Key={'key': key})
+    suumo = scrape_detail_page(key, suumo_html['Item']['url'], suumo_html['Item']['html'].value)
 
-    chintai_collection = client.scraping.chintai
-    chintai_collection.create_index('key', unique=True)
-    chintai_collection.update_one({'key': key}, {'$set': suumo}, upsert=True)
+    rents_table.put_item(
+        Item={
+            'key': key,
+            **suumo
+        }
+    )
 
 
 def scrape_detail_page(key: str, url: str, html: str) -> dict:
