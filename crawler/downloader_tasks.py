@@ -6,14 +6,15 @@ import requests
 from scraper_tasks import scrape
 import boto3
 import time
+import botocore
 
-logging.basicConfig(level=logging.INFO)
-# @task(queue='download')
+# logging.basicConfig(level=logging.INFO)
 
 
 def download():
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table('suumo_htmls')
+    BUCKET_NAME = 'suumo-html'
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(BUCKET_NAME)
 
     sqs = boto3.resource('sqs')
     download_queue = sqs.get_queue_by_name(QueueName='download')
@@ -25,25 +26,24 @@ def download():
             for message in message_list:
                 url = message.body
                 key = extract_key(url)
-                suumo_html = table.get_item(Key={'key': key})
-                if 'Item' not in suumo_html:
-                    logging.info(f'Fetching detail page: {url}')
-                    response = requests.get(url)
-                    import pdb
-                    pdb.set_trace()
+                logging.info(f'Fetching detail page: {url}')
 
-                    table.put_item(
-                        Item={
-                            'url': url,
-                            'key': key,
-                            'html': response.content,
-                        }
+                response = requests.get(url)
+
+                try:
+                    bucket.put_object(
+                        Key='v1/'+key,
+                        Body=response.content,
                     )
                     response = scrape_queue.send_message(MessageBody=key)
                     logging.info(response)
-                else:
-                    logging.info(f'already fetched page: {url}')
-                message.delete()
+                    message.delete()
+                except botocore.exceptions.ClientError as e:
+                    logging.error('client error')
+                    raise Exception(e)
+                except Exception as e:
+                    logging.error('other error')
+                    raise Exception(e)
         else:
             break
 
