@@ -10,7 +10,8 @@ def scrape(key: str):
     rents_table = dynamodb.Table('rents')
 
     suumo_html = suumo_htmls_table.get_item(Key={'key': key})
-    suumo = scrape_detail_page(key, suumo_html['Item']['url'], suumo_html['Item']['html'].value)
+    suumo = scrape_detail_page(
+        key, suumo_html['Item']['url'], suumo_html['Item']['html'].value)
 
     rents_table.put_item(
         Item={
@@ -29,3 +30,7 @@ def scrape_detail_page(key: str, url: str, html: str) -> dict:
         'rent': root.cssselect('span.property_view_note-emphasis')[0].text_content()
     }
     return chintai
+
+
+if __name__ == "__main__":
+    scrape()
