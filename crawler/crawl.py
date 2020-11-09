@@ -7,6 +7,8 @@ from downloader_tasks import download
 import boto3
 import uuid
 
+logging.basicConfig(level=logging.INFO)
+
 
 def main():
     logging.info('Crawling urls')
@@ -54,5 +56,4 @@ def get_last_page(response: requests.Response) -> int:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
     main()

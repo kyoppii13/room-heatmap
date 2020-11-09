@@ -1,12 +1,10 @@
 import re
 
 import logging
-from pyqs import task
 import requests
-from scraper_tasks import scrape
 import boto3
-import time
 import botocore
+import json
 
 # logging.basicConfig(level=logging.INFO)
 
@@ -35,7 +33,8 @@ def download():
                         Key='v1/'+key,
                         Body=response.content,
                     )
-                    response = scrape_queue.send_message(MessageBody=key)
+                    response = scrape_queue.send_message(
+                        MessageBody=json.dumps({"key": key, "url": url}))
                     logging.info(response)
                     message.delete()
                 except botocore.exceptions.ClientError as e:
