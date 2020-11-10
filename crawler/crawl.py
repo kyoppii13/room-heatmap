@@ -3,7 +3,6 @@ import logging
 
 import requests
 import lxml.html
-from downloader_tasks import download
 import boto3
 import uuid
 
@@ -18,10 +17,10 @@ def main():
     start_url = 'https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=030&bs=040&pc=30&smk=&po1=25&po2=99&shkr1=03&shkr2=03&shkr3=03&shkr4=03&sc=13113&ta=13&cb=0.0&ct=10.0&et=9999999&mb=0&mt=9999999&cn=9999999&fw2='
 
     response = session.get(start_url)
-    # last_page = get_last_page(response)
+    last_page = get_last_page(response)
     sqs = boto3.resource('sqs')
     queue = sqs.create_queue(QueueName='download')
-    for page in range(1, 2):
+    for page in range(1, 10):
         url = f'{start_url}&page={page}'
         logging.info(f'Fetching list page: {url}')
         response = session.get(url)
