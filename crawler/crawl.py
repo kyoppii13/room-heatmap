@@ -21,7 +21,7 @@ def main():
     last_page = get_last_page(response)
     sqs = boto3.resource('sqs')
     queue = sqs.create_queue(QueueName='download')
-    for page in range(1, 10):
+    for page in range(1, last_page + 1):
         url = f'{start_url}&page={page}'
         logging.info(f'Fetching list page: {url}')
         response = session.get(url)
