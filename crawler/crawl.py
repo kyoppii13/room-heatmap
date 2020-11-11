@@ -1,5 +1,6 @@
 from typing import Iterator
 import logging
+import time
 
 import requests
 import lxml.html
@@ -35,6 +36,7 @@ def main():
         for data in divided_messages:
             response = queue.send_messages(Entries=data)
             logging.info(response)
+        time.sleep(1)
 
 
 def scrape_list_page(response: requests.Response) -> Iterator[str]:
