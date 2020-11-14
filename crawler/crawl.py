@@ -6,6 +6,7 @@ import requests
 import lxml.html
 import boto3
 import uuid
+import sys
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,8 +15,11 @@ def main():
     logging.info('Crawling urls')
 
     session = requests.Session()
-    # 東京都渋谷区 家賃10万以下
-    start_url = 'https://suumo.jp/jj/chintai/ichiran/FR301FC001/?ar=030&bs=040&pc=30&smk=&po1=25&po2=99&shkr1=03&shkr2=03&shkr3=03&shkr4=03&sc=13113&ta=13&cb=0.0&ct=10.0&et=9999999&mb=0&mt=9999999&cn=9999999&fw2='
+    try:
+        start_url = sys.argv[1]
+    except:
+        logging.error('Not enough arguments')
+        return
 
     response = session.get(start_url)
     last_page = get_last_page(response)
